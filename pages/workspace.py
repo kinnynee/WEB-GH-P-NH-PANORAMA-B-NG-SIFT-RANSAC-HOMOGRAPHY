@@ -7,6 +7,7 @@ import streamlit as st
 from models.result_models import ImageInput, StitchSettings, UserFacingError
 from services.export_service import panorama_download_bytes, results_zip_bytes
 from services.processing_service import build_image_inputs, run_panorama_pipeline
+from services.storage_service import save_run_artifacts, save_uploaded_file
 from ui.components import metric_strip, render_error
 
 
@@ -17,6 +18,7 @@ def _init_state() -> None:
     st.session_state.setdefault("project_files", [])
     st.session_state.setdefault("result", None)
     st.session_state.setdefault("last_error", None)
+    st.session_state.setdefault("saved_result_dir", None)
 
 
 def _settings_from_widgets() -> StitchSettings:
@@ -61,7 +63,10 @@ def _render_upload_panel() -> None:
                 data = file.getvalue()
                 key = (file.name, len(data))
                 if key not in existing and len(st.session_state.project_files) < 4:
-                    st.session_state.project_files.append({"name": file.name, "data": data})
+                    saved_path = save_uploaded_file(file.name, data)
+                    st.session_state.project_files.append(
+                        {"name": file.name, "data": data, "saved_path": str(saved_path)}
+                    )
                     existing.add(key)
             if len(uploaded) > 4 or len(st.session_state.project_files) > 4:
                 st.warning("This version supports up to 4 images. Extra files were ignored.")
@@ -78,6 +83,7 @@ def _render_upload_panel() -> None:
             ]
             st.session_state.result = None
             st.session_state.last_error = None
+            st.session_state.saved_result_dir = None
             st.rerun()
 
         if not st.session_state.project_files:
@@ -102,6 +108,7 @@ def _render_upload_panel() -> None:
                     if st.button("Delete", key=f"delete_{index}", width="stretch"):
                         del st.session_state.project_files[index]
                         st.session_state.result = None
+                        st.session_state.saved_result_dir = None
                         st.rerun()
 
 
@@ -110,6 +117,7 @@ def _move_image(index: int, delta: int) -> None:
     new_index = index + delta
     files[index], files[new_index] = files[new_index], files[index]
     st.session_state.result = None
+    st.session_state.saved_result_dir = None
     st.rerun()
 
 
@@ -143,14 +151,17 @@ def _process_project() -> None:
         progress.progress(60)
         status.write("Creating Panorama")
         result = run_panorama_pipeline(images, settings)
+        saved_result_dir = save_run_artifacts(result, list(st.session_state.project_files))
         progress.progress(100)
         status.success("Panorama created successfully.")
         st.session_state.result = result
         st.session_state.last_error = None
+        st.session_state.saved_result_dir = str(saved_result_dir)
     except UserFacingError as error:
         progress.progress(100)
         st.session_state.result = None
         st.session_state.last_error = error
+        st.session_state.saved_result_dir = None
 
 
 def _render_results_panel() -> None:
@@ -186,6 +197,8 @@ def _render_latest_result_preview(result, error) -> None:
 
     st.markdown("### Latest Panorama")
     st.image(result.final_panorama, caption="Final panorama result", width="stretch")
+    if st.session_state.saved_result_dir:
+        st.caption(f"Saved to {st.session_state.saved_result_dir}")
     height, width = result.final_panorama.shape[:2]
     metric_strip(
         [
@@ -329,4 +342,5 @@ def _render_panorama_tab(result, error) -> None:
             st.session_state.project_files = []
             st.session_state.result = None
             st.session_state.last_error = None
+            st.session_state.saved_result_dir = None
             st.rerun()

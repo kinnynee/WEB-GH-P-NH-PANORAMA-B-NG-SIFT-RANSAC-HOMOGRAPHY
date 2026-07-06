@@ -56,13 +56,12 @@ http://localhost:8501
    - `Panorama`: ảnh panorama cuối cùng.
 7. Bấm `Download Panorama` để tải ảnh kết quả hoặc `Download All Results` để tải toàn bộ kết quả dạng ZIP.
 
-Bạn cũng có thể bấm `Load Sample Images` để chạy thử bằng ảnh mẫu có sẵn trong dự án.
 
 ## Nơi Lưu Dữ Liệu
 
 Khi chạy ứng dụng:
 
-- Ảnh bạn upload được lưu vào:
+- Ảnh upload được lưu vào:
 
 ```text
 data/uploads/
@@ -137,7 +136,7 @@ Nếu tất cả ổn, terminal sẽ hiển thị số lượng test đã pass.
 
 **Không bấm được Create Panorama**
 
-Bạn cần upload ít nhất 2 ảnh và tối đa 4 ảnh.
+cần upload ít nhất 2 ảnh và tối đa 4 ảnh.
 
 **Unsupported File Format**
 
@@ -154,7 +153,3 @@ Hai ảnh không đủ vùng chồng lấp hoặc thứ tự ảnh chưa đúng.
 **Homography Failed**
 
 Thử tăng vùng chồng lấp, giảm thay đổi góc nhìn hoặc chỉnh lại `RANSAC Threshold`.
-
-## Ghi Chú
-
-Thư mục `data/uploads/` và `data/results/` được bỏ qua trong Git để tránh commit ảnh cá nhân hoặc file kết quả dung lượng lớn.
